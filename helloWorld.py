@@ -17,3 +17,5 @@ print("ok")
 print("lmao")
 
 print("main krna tha")
+
+print("whokey")
