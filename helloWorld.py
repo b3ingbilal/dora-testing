@@ -13,3 +13,5 @@ print("Lol")
 print("Ughhh")
 
 print("ok")
+
+print("main krna tha")
