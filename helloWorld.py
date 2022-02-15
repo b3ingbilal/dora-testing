@@ -17,9 +17,3 @@ print("ok")
 print("lmao")
 
 print("main krna tha")
-
-print("whokey")
-
-print("Ab toh hoja")
-
-print("Hokaye")
