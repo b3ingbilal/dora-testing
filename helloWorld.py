@@ -6,4 +6,3 @@ print("Checking pushed")
 
 print("Ok hai")
 
-print("Done")
