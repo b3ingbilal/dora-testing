@@ -13,7 +13,3 @@ print("Lol")
 print("Ughhh")
 
 print("ok")
-
-print("lmao")
-
-print("main krna tha")
