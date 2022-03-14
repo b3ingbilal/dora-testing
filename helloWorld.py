@@ -1,19 +1,3 @@
-print("Only for commit")
+print("hello")
 
-print("Do something")
-
-print("Checking pushed")
-
-print("Ok hai")
-
-print("Done")
-
-print("Lol")
-
-print("Ughhh")
-
-print("ok")
-
-print("lmao")
-
-print("main krna tha")
+print("your")
