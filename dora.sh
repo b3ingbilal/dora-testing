@@ -6,46 +6,35 @@ if [[ $# -eq 1 ]]; then
     user_name=$(git config -l | grep user.name | sed 's/^..........\(.*\).*/\1/')
     token=$(gcloud secrets versions access 1 --secret="DORA_EVENT_CALLER")
     
-    old_release_tag=$(curl -u ${user_name}:${token} https://api.github.com/repos/educative/educative/git/refs/tags | \
-        python3 -c "import sys, json; output=json.load(sys.stdin); a=[obj['url'][63:] for obj in output  if '${new_release_tag_base}' in obj['url']  and '${new_release_tag}' not in obj['url']]; a.sort(); print(a[len(a)-1])")
+    source $(dirname "$0")/dora_use.sh
+    old_release_tag=$(get_old_release_tag $user_name $token $new_release_tag_base $new_release_tag)
     new_release_label=$(echo ${new_release_tag} | head -n2 | cut -d "-" -f2)
-
 
     echo "new_release_label = ${new_release_label}"
     echo "new_release_tag = ${new_release_tag}"
     echo "old_release_tag = ${old_release_tag}"
 
+    new_release_sha=$(get_release_sha $user_name $token $new_release_tag)
+    old_release_sha=$(get_release_sha $user_name $token $old_release_tag)
+    new_release_commits=$(get_release_commits $user_name $token $new_release_sha)
+    old_release_commits=$(get_release_commits $user_name $token $old_release_sha)
 
-    sha1=$(curl -u ${user_name}:${token} https://api.github.com/repos/educative/educative/git/refs/tags/${new_release_tag} | \
-        python3 -c "import sys, json; print(json.load(sys.stdin)['object']['sha'])")
+    echo "${new_release_commits}" | sort > one.txt
+    echo "${old_release_commits}" | sort > two.txt
 
-    sha2=$(curl -u ${user_name}:${token} https://api.github.com/repos/educative/educative/git/refs/tags/${old_release_tag} | \
-        python3 -c "import sys, json; print(json.load(sys.stdin)['object']['sha'])")
+    commit_diff=$(comm -23 one.txt two.txt)
 
+    echo "Final shas: ${commit_diff}"
 
-    shas1=$(curl -u ${user_name}:${token} https://api.github.com/repos/educative/educative/commits?sha=${sha1} | \
-        python3 -c "import sys, json; output=json.load(sys.stdin); a=[obj['sha'] for obj in output]; print('\n'.join(a))")
-
-    shas2=$(curl -u ${user_name}:${token} https://api.github.com/repos/educative/educative/commits?sha=${sha2} | \
-        python3 -c "import sys, json; output=json.load(sys.stdin); a=[obj['sha'] for obj in output]; print('\n'.join(a))")
-
-
-    echo "${shas1}" | sort > one.txt
-    echo "${shas2}" | sort > two.txt
-
-
-    shas=$(comm -23 one.txt two.txt)
-
-    echo "Final shas: ${shas}"
-
-    sha_list=""
-    for var in ${shas}
+    commit_list=""
+    for var in ${commit_diff}
     do
-        sha_list+="${var}, "
+        commit_list+="${var}, "
     done
 
-    #Still need to add check if label is not rb
-    gcloud functions call "dora-insights" --data '{"changes": "'"$sha_list"'", "script-call" : "true", "release-tag": "'"$new_release_tag"'", "label": "'"$new_release_label"'"}'
+    rm -rf one.txt two.txt
+
+    gcloud functions call "dora-insights" --data '{"changes": "'"$commit_list"'", "script-call" : "true", "release-tag": "'"$new_release_tag"'", "label": "'"$new_release_label"'"}'
 else
     echo "Invalid Command line arguments."
     echo "Usage: ./dora_event_caller.sh <RELEASE_VERSION> <USER_NAME> <ACCESS_TOKEN>"
